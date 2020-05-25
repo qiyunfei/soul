@@ -62,7 +62,7 @@ public interface RuleMapper {
      * @param name the name
      * @return rule do
      */
-    RuleDO findByName(String name);
+    List<RuleDO> findByName(String name);
 
     /**
      * count rule by query.

@@ -56,6 +56,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
+
 /**
  * SelectorServiceImpl.
  *
@@ -198,14 +200,14 @@ public class SelectorServiceImpl implements SelectorService {
     }
 
     @Override
-    public SelectorDO findByName(final String name) {
+    public List<SelectorDO> findByName(final String name) {
         return selectorMapper.selectByName(name);
     }
 
     @Override
-    public SelectorData buildByName(final String name) {
-        SelectorDO selectorDO = selectorMapper.selectByName(name);
-        return buildSelectorData(selectorDO);
+    public List<SelectorData> buildByName(final String name) {
+        List<SelectorDO> selectorDOList = selectorMapper.selectByName(name);
+        return selectorDOList.stream().map(e -> buildSelectorData(e)).collect(Collectors.toList());
     }
 
     /**

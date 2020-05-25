@@ -71,17 +71,17 @@ public interface SelectorService {
      * find selector by name.
      *
      * @param name the name
-     * @return selector do
+     * @return the selector do list
      */
-    SelectorDO findByName(String name);
+    List<SelectorDO> findByName(String name);
 
     /**
      * Build by name selector data.
      *
      * @param name the name
-     * @return the selector data
+     * @return the selector data list
      */
-    SelectorData buildByName(String name);
+    List<SelectorData> buildByName(String name);
 
     /**
      * find page of selector by query.

@@ -64,7 +64,7 @@ public interface SelectorMapper {
      * @param name the name
      * @return selector do
      */
-    SelectorDO selectByName(String name);
+    List<SelectorDO> selectByName(String name);
 
     /**
      * count selector by query.

@@ -165,23 +165,28 @@ public class HttpServiceDiscovery implements InitializingBean {
     }
 
     private void updateSelectorHandler(final String contextPath, final List<String> uriList) {
-        SelectorDO selector = selectorService.findByName(contextPath);
-        if (Objects.nonNull(selector)) {
-            SelectorData selectorData = selectorService.buildByName(contextPath);
-            if (uriList == null) {
-                selector.setHandle("");
-                selectorData.setHandle("");
-            } else {
-                String handler = GsonUtils.getInstance().toJson(buildDivideUpstream(uriList));
-                selector.setHandle(handler);
-                selectorData.setHandle(handler);
-            }
-            selectorMapper.updateSelective(selector);
+        List<SelectorDO> selectorList = selectorService.findByName(contextPath);
+        if (CollectionUtils.isNotEmpty(selectorList)) {
+            for (SelectorDO selector : selectorList) {
+                List<SelectorData> selectorDataList = selectorService.buildByName(contextPath);
+                for (SelectorData selectorData : selectorDataList) {
+                    if (uriList == null) {
+                        selector.setHandle("");
+                        selectorData.setHandle("");
+                    } else {
+                        String handler = GsonUtils.getInstance().toJson(buildDivideUpstream(uriList));
+                        selector.setHandle(handler);
+                        selectorData.setHandle(handler);
+                    }
+                    selectorMapper.updateSelective(selector);
 
-            //发送更新事件
-            // publish change event.
-            eventPublisher.publishEvent(new DataChangedEvent(ConfigGroupEnum.SELECTOR, DataEventTypeEnum.UPDATE,
-                    Collections.singletonList(selectorData)));
+                    //发送更新事件
+                    // publish change event.
+                    eventPublisher.publishEvent(new DataChangedEvent(ConfigGroupEnum.SELECTOR, DataEventTypeEnum.UPDATE,
+                            Collections.singletonList(selectorData)));
+                }
+            }
+
         }
     }
 

@@ -165,9 +165,11 @@ public class MetaDataServiceImpl implements MetaDataService {
 
         saveOrUpdateMetaData(exist, metaDataDTO);
 
-        String selectorId = handlerSelector(metaDataDTO);
+        List<String> selectorIdList = handlerSelector(metaDataDTO);
 
-        handlerRule(selectorId, metaDataDTO, exist);
+        for (String selectorId : selectorIdList) {
+            handlerRule(selectorId, metaDataDTO, exist);
+        }
 
         return "success";
     }
@@ -252,46 +254,50 @@ public class MetaDataServiceImpl implements MetaDataService {
                 .collect(Collectors.toList());
     }
 
-    private String handlerSelector(final MetaDataDTO metaDataDTO) {
+    private List<String> handlerSelector(final MetaDataDTO metaDataDTO) {
         String contextPath = buildContextPath(metaDataDTO);
-        SelectorDO selectorDO = selectorService.findByName(contextPath);
-        String selectorId;
-        if (Objects.isNull(selectorDO)) {
+        List<SelectorDO> selectorDOList = selectorService.findByName(contextPath);
+        List<String> selectorIdList = Lists.newArrayList();
+        if (CollectionUtils.isEmpty(selectorDOList)) {
             //需要新增
-            selectorId = registerSelector(contextPath, metaDataDTO.getRpcType(), metaDataDTO.getAppName());
+            String selectorId = registerSelector(contextPath, metaDataDTO.getRpcType(), metaDataDTO.getAppName());
+            selectorIdList.add(selectorId);
         } else {
-            selectorId = selectorDO.getId();
+            selectorDOList.stream().map(e -> e.getId()).collect(Collectors.toList());
         }
-        return selectorId;
+        return selectorIdList;
     }
 
     private void handlerRule(final String selectorId, final MetaDataDTO metaDataDTO, final MetaDataDO exist) {
-        RuleDO existRule = ruleMapper.findByName(metaDataDTO.getPath());
-        if (Objects.isNull(exist) || Objects.isNull(existRule)) {
+        List<RuleDO> existRuleList = ruleMapper.findByName(metaDataDTO.getPath());
+        if (Objects.isNull(exist) || CollectionUtils.isEmpty(existRuleList)) {
             //需要新增
             registerRule(selectorId, metaDataDTO.getPath(), metaDataDTO.getRpcType());
         } else {
             //更新
             if (!exist.getPath().equals(metaDataDTO.getPath())) {
-                RuleDO ruleDO = ruleMapper.findByName(exist.getPath());
-                if (Objects.isNull(ruleDO)) {
+                List<RuleDO> ruleDOList = ruleMapper.findByName(exist.getPath());
+                if (CollectionUtils.isEmpty(ruleDOList)) {
                     return;
                 }
-                ruleDO.setName(metaDataDTO.getPath());
-                ruleMapper.updateSelective(ruleDO);
-                List<RuleConditionDO> ruleConditionDOS = ruleConditionMapper.selectByQuery(new RuleConditionQuery(ruleDO.getId()));
-                if (CollectionUtils.isEmpty(ruleConditionDOS)) {
-                    return;
-                }
-                List<ConditionData> conditionDataList = new ArrayList<>();
-                for (RuleConditionDO ruleConditionDO : ruleConditionDOS) {
-                    if (ruleConditionDO.getParamType().equals(ParamTypeEnum.URI.getName())) {
-                        ruleConditionDO.setParamValue(metaDataDTO.getPath());
-                        ruleConditionMapper.updateSelective(ruleConditionDO);
+                for (RuleDO ruleDO : ruleDOList) {
+                    ruleDO.setName(metaDataDTO.getPath());
+                    ruleMapper.updateSelective(ruleDO);
+                    List<RuleConditionDO> ruleConditionDOS =
+                            ruleConditionMapper.selectByQuery(new RuleConditionQuery(ruleDO.getId()));
+                    if (CollectionUtils.isEmpty(ruleConditionDOS)) {
+                        return;
                     }
-                    conditionDataList.add(ConditionTransfer.INSTANCE.mapToRuleDO(ruleConditionDO));
+                    List<ConditionData> conditionDataList = new ArrayList<>();
+                    for (RuleConditionDO ruleConditionDO : ruleConditionDOS) {
+                        if (ruleConditionDO.getParamType().equals(ParamTypeEnum.URI.getName())) {
+                            ruleConditionDO.setParamValue(metaDataDTO.getPath());
+                            ruleConditionMapper.updateSelective(ruleConditionDO);
+                        }
+                        conditionDataList.add(ConditionTransfer.INSTANCE.mapToRuleDO(ruleConditionDO));
+                    }
+                    publishEvent(ruleDO, conditionDataList, metaDataDTO.getRpcType());
                 }
-                publishEvent(ruleDO, conditionDataList, metaDataDTO.getRpcType());
             }
         }
     }
