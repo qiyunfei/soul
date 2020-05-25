@@ -263,7 +263,7 @@ public class MetaDataServiceImpl implements MetaDataService {
             String selectorId = registerSelector(contextPath, metaDataDTO.getRpcType(), metaDataDTO.getAppName());
             selectorIdList.add(selectorId);
         } else {
-            selectorDOList.stream().map(e -> e.getId()).collect(Collectors.toList());
+            selectorIdList = selectorDOList.stream().map(e -> e.getId()).collect(Collectors.toList());
         }
         return selectorIdList;
     }
